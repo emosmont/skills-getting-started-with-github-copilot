@@ -25,14 +25,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
-        // Générer la liste des participants
+        // Générer la liste des participants avec icône de suppression
         let participantsHTML = "";
         if (details.participants.length > 0) {
           participantsHTML = `
             <div class="participants-section">
               <strong>Participants inscrits :</strong>
-              <ul class="participants-list">
-                ${details.participants.map(email => `<li>${email}</li>`).join("")}
+              <ul class="participants-list no-bullets">
+                ${details.participants.map(email => `
+                  <li data-activity="${name}" data-email="${email}">
+                    <span class="participant-email">${email}</span>
+                    <span class="delete-participant" title="Désinscrire" style="cursor:pointer;color:#c00;margin-left:8px;">&#128465;</span>
+                  </li>
+                `).join("")}
               </ul>
             </div>
           `;
@@ -43,6 +48,30 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
           `;
         }
+      // Ajout du gestionnaire de clic pour la suppression
+      setTimeout(() => {
+        document.querySelectorAll('.delete-participant').forEach(icon => {
+          icon.addEventListener('click', async function(e) {
+            const li = this.closest('li');
+            const activity = li.getAttribute('data-activity');
+            const email = li.getAttribute('data-email');
+            if (confirm(`Désinscrire ${email} de l'activité ${activity} ?`)) {
+              try {
+                const response = await fetch(`/activities/${encodeURIComponent(activity)}/unregister?email=${encodeURIComponent(email)}`, {
+                  method: 'POST',
+                });
+                if (response.ok) {
+                  fetchActivities();
+                } else {
+                  alert("Erreur lors de la désinscription.");
+                }
+              } catch (err) {
+                alert("Erreur réseau lors de la désinscription.");
+              }
+            }
+          });
+        });
+      }, 0);
 
         activityCard.innerHTML = `
           <h4>${name}</h4>
